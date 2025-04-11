@@ -5,94 +5,23 @@ environments: Web
 status: Published
 # QuLab Codelab: Exploring Arbitrage Opportunities
 
-## Introduction
+This codelab will guide you through the QuLab application, a tool designed to illustrate and explore arbitrage opportunities in financial markets. We'll cover various methods of representing market data, identifying potential arbitrage cycles, and discuss the practical challenges involved in arbitrage trading.  This application serves as an educational tool, demonstrating concepts rather than providing real-time trading capabilities.
+
+## Understanding Market Representations
 Duration: 00:05
 
-Welcome to the QuLab codelab! This application is designed to demonstrate the principles of arbitrage in financial markets, specifically focusing on currency exchange. Arbitrage, in simple terms, is the simultaneous buying and selling of an asset in different markets to profit from tiny differences in the asset's listed price. This codelab will guide you through the functionalities of QuLab, explaining key concepts such as market representation, arbitrage cycle identification using the Bellman-Ford algorithm, and the practical challenges associated with arbitrage trading. By the end of this codelab, you will have a solid understanding of how this application works and the theoretical underpinnings of arbitrage detection.
+This section focuses on the fundamental ways to represent market data to identify arbitrage opportunities. We'll explore exchange rate matrices and their graphical representations, along with log transformations for simplifying arbitrage detection.
 
-## Representations of a Market
-Duration: 00:15
+## Exchange Rate Matrix
+Duration: 00:10
 
-In this section, we will explore how a market, specifically currency exchange rates, can be represented in two key formats: an Exchange Rate Matrix and a Directed Graph. Understanding these representations is crucial for identifying potential arbitrage opportunities.
-
-### Exchange Rate Matrix
-Duration: 00:05
-
-An Exchange Rate Matrix is a tabular representation where each cell (i, j) contains the exchange rate from currency i to currency j.  Let's examine the matrix used in QuLab.
+The exchange rate matrix is the cornerstone of our market representation. Each cell (i, j) in the matrix represents the exchange rate from currency i to currency j.
 
 ```python
 import streamlit as st
 import pandas as pd
-import numpy as np
-import networkx as nx
-import plotly.graph_objects as go
 
-def plot_nx_graph(G, title):
-    pos = nx.spring_layout(G, seed=42)
-    edge_x = []
-    edge_y = []
-    for edge in G.edges(data=True):
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        edge_x.extend([x0, x1, None])
-        edge_y.extend([y0, y1, None])
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=2, color='#888'),
-        hoverinfo='none',
-        mode='lines')
-
-    node_x = []
-    node_y = []
-    for node in G.nodes():
-        x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-    node_trace = go.Scatter(
-        x=node_x, y=node_y,
-        mode='markers+text',
-        text=[str(node) for node in G.nodes()],
-        textposition="bottom center",
-        marker=dict(
-            color='pink',
-            size=20,
-            line_width=2))
-
-    fig = go.Figure(data=[edge_trace, node_trace],
-                    layout=go.Layout(
-                        title=title,
-                        titlefont_size=16,
-                        showlegend=False,
-                        hovermode='closest',
-                        margin=dict(b=20, l=5, r=5, t=40)))
-    return fig
-
-def app():
-    st.subheader("Representations of a Market")
-    st.write("Below is an explanation and visualization of the exchange rate matrix and its directed graph representation.")
-
-    # Exchange rate matrix representation
-    exchange_rate_matrix = pd.DataFrame({
-        0: [1.00, 0.58, 0.63, 0.27, 0.17, 0.20],
-        1: [1.68, 1.00, 0.39, 0.74, 0.47, 0.79],
-        2: [1.57, 2.48, 1.00, 0.04, 0.15, 0.11],
-        3: [3.64, 1.35, 22.94, 1.00, 0.22, 0.23],
-        4: [5.84, 2.02, 6.84, 4.40, 1.00, 0.49],
-        5: [4.76, 1.21, 8.59, 4.41, 1.97, 1.00]
-    })
-    st.markdown("### Exchange Rate Matrix Representation")
-    st.write("An exchange rate matrix displays the exchange rates between different currencies. Each cell (i, j) represents the rate at which currency i can be exchanged for currency j.")
-    st.dataframe(exchange_rate_matrix)
-
-    # ... rest of the code in market.py ...
-
-if __name__ == '__main__':
-    app()
-```
-
-In `pages/market.py`, you can see the following Pandas DataFrame representing the exchange rate matrix:
-
-```python
+# Example exchange rate matrix
 exchange_rate_matrix = pd.DataFrame({
     0: [1.00, 0.58, 0.63, 0.27, 0.17, 0.20],
     1: [1.68, 1.00, 0.39, 0.74, 0.47, 0.79],
@@ -101,65 +30,223 @@ exchange_rate_matrix = pd.DataFrame({
     4: [5.84, 2.02, 6.84, 4.40, 1.00, 0.49],
     5: [4.76, 1.21, 8.59, 4.41, 1.97, 1.00]
 })
+
+st.subheader("Exchange Rate Matrix Representation")
+st.write("An exchange rate matrix displays the exchange rates between different currencies.")
+st.dataframe(exchange_rate_matrix)
 ```
-Here, the indices and column names (0, 1, 2, 3, 4, 5) represent different currencies. For example, the value at `exchange_rate_matrix.iloc[0, 1]` (which is 0.58) indicates that 1 unit of currency 0 can be exchanged for 0.58 units of currency 1.
 
-### Directed Graph Representation
-Duration: 00:05
+*   **Explanation:** The code snippet above creates a Pandas DataFrame representing the exchange rate matrix. `st.dataframe()` displays the matrix in the Streamlit application.  Each row and column represents a currency, and the value at `matrix[i][j]` represents the exchange rate from currency `i` to currency `j`.
 
-The Exchange Rate Matrix can be further visualized as a Directed Graph. In this graph:
-- **Nodes** represent currencies.
-- **Edges** represent the exchange rate from one currency to another, with the edge weight being the exchange rate.
+## Directed Graph Representation
+Duration: 00:15
 
-QuLab uses the `networkx` library to create and visualize this graph using `plotly`.
+We can visualize the exchange rate matrix as a directed graph where:
+
+*   Nodes represent currencies.
+*   Edges represent the exchange rates between currencies.
+*   Edge weights represent the exchange rates.
 
 ```python
-    # Create directed graph from exchange rate matrix and visualize with Plotly
-    G = nx.DiGraph()
-    n = len(exchange_rate_matrix)
-    for i in range(n):
-        for j in range(n):
-            G.add_edge(i, j, weight=exchange_rate_matrix.iloc[i, j])
-    st.markdown("### Directed Graph Representation")
-    st.write("A directed graph represents the market where nodes are currencies and edges (with weights) represent exchange rates.")
-    fig1 = plot_nx_graph(G, "Exchange Rate Graph")
-    st.plotly_chart(fig1, use_container_width=True)
+import networkx as nx
+import plotly.graph_objects as go
+
+# Directed Graph Representation
+G = nx.DiGraph()
+for i in range(len(exchange_rate_matrix)):
+    for j in range(len(exchange_rate_matrix)):
+        G.add_edge(i, j, weight=exchange_rate_matrix.iloc[i, j])
+
+# Visualization with Plotly
+pos = nx.spring_layout(G)
+edge_x = []
+edge_y = []
+for edge in G.edges():
+    x0, y0 = pos[edge[0]]
+    x1, y1 = pos[edge[1]]
+    edge_x.append(x0)
+    edge_y.append(y0)
+    edge_x.append(x1)
+    edge_y.append(y1)
+    edge_x.append(None)
+    edge_y.append(None)
+
+edge_trace = go.Scatter(
+    x=edge_x, y=edge_y,
+    line=dict(width=0.5, color='#888'),
+    hoverinfo='none',
+    mode='lines')
+
+node_x = []
+node_y = []
+for node in G.nodes():
+    x, y = pos[node]
+    node_x.append(x)
+    node_y.append(y)
+
+node_trace = go.Scatter(
+    x=node_x, y=node_y,
+    mode='markers',
+    hoverinfo='text',
+    marker=dict(
+        showscale=True,
+        colorscale='YlGnBu',
+        reversescale=True,
+        color=[],
+        size=10,
+        colorbar=dict(
+            thickness=15,
+            title='Node Connections',
+            xanchor='left',
+            titleside='right'
+        ),
+        line_width=2))
+
+node_adjacencies = []
+node_text = []
+for node, adjacencies in enumerate(G.adjacency()):
+    node_adjacencies.append(len(adjacencies[1]))
+    node_text.append(f"Currency {node}")
+
+node_trace.marker.color = node_adjacencies
+node_trace.text = node_text
+
+fig = go.Figure(data=[edge_trace, node_trace],
+                layout=go.Layout(
+                    title='Directed Graph Representation',
+                    titlefont_size=16,
+                    showlegend=False,
+                    hovermode='closest',
+                    margin=dict(b=20, l=5, r=5, t=40),
+                    annotations=[dict(
+                        text="A directed graph represents currencies as nodes and exchange rates as edges.",
+                        showarrow=False,
+                        xref="paper", yref="paper",
+                        x=0.005, y=-0.002)],
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                )
+st.subheader("Directed Graph Representation")
+st.write("A directed graph represents currencies as nodes and exchange rates as edges.")
+st.plotly_chart(fig, use_container_width=True)
 ```
 
-The `plot_nx_graph` function is a helper function to visualize the `networkx` graph using `plotly`. It positions the nodes using `spring_layout` and creates scatter plots for edges and nodes to render the graph.
+*   **Explanation:** This code uses the `networkx` library to create a directed graph from the exchange rate matrix.  The `plotly` library is then used to visualize this graph.  Nodes represent currencies, and the edges represent the exchange rates. The layout is configured for better presentation within the Streamlit app.  This visualization helps in identifying potential arbitrage cycles more intuitively.
 
-<aside class="positive">
-  <b>Key Concept:</b> Representing a market as a graph allows us to use graph algorithms to analyze market properties, such as the existence of arbitrage opportunities.
-</aside>
+## Log-Transformed Representations
+Duration: 00:10
 
-### Log-Transformed Representation
-Duration: 00:05
-
-To convert the multiplicative arbitrage problem into an additive one, we take the negative logarithm of the exchange rates. This transformation is essential for using algorithms like Bellman-Ford, which are designed for additive weights to detect negative cycles.
+To simplify the detection of arbitrage opportunities, we apply a log transformation to the exchange rates. This converts the multiplicative problem of finding arbitrage cycles into an additive problem, making it easier to solve using algorithms like Bellman-Ford.
 
 ```python
-    # Log-transformed representations
-    st.markdown("### Log-Transformed Representations")
-    st.write("Taking the negative logarithm of the exchange rates transforms the multiplicative arbitrage problem into an additive one.")
-    log_exchange_rate_matrix = -np.log(exchange_rate_matrix)
-    log_exchange_rate_matrix = pd.DataFrame(log_exchange_rate_matrix)
-    st.dataframe(log_exchange_rate_matrix)
+import numpy as np
 
-    # Create directed graph from log-transformed matrix
-    G_log = nx.DiGraph()
-    for i in range(n):
-        for j in range(n):
-            G_log.add_edge(i, j, weight=log_exchange_rate_matrix.iloc[i, j])
-    fig2 = plot_nx_graph(G_log, "Log-Transformed Exchange Rate Graph")
-    st.plotly_chart(fig2, use_container_width=True)
+# Log-transformed exchange rate matrix
+log_exchange_rate_matrix = -np.log(exchange_rate_matrix)
+log_exchange_rate_matrix = pd.DataFrame(log_exchange_rate_matrix)
+st.subheader("Log-Transformed Representations")
+st.write("Log transformation converts multiplicative arbitrage detection into an additive problem.")
+st.dataframe(log_exchange_rate_matrix)
 ```
 
-As shown in the code, we calculate the negative logarithm of the `exchange_rate_matrix` and create a new directed graph `G_log` with these log-transformed weights. This log-transformed graph is crucial for the next step: identifying arbitrage cycles.
+*   **Explanation:** This code calculates the negative logarithm of each exchange rate in the matrix. The negative sign is used because arbitrage opportunities are identified by *negative* cycles in the log-transformed graph.
+
+## Log-Transformed Directed Graph
+Duration: 00:15
+
+We create a directed graph from the log-transformed exchange rate matrix, similar to the previous graph representation.
+
+```python
+# Create a directed graph from the log-transformed matrix
+G_log = nx.DiGraph()
+for i in range(len(log_exchange_rate_matrix)):
+    for j in range(len(log_exchange_rate_matrix)):
+        G_log.add_edge(i, j, weight=log_exchange_rate_matrix.iloc[i, j])
+
+# Visualization with Plotly (similar to the previous graph visualization)
+pos_log = nx.spring_layout(G_log)
+edge_x_log = []
+edge_y_log = []
+for edge in G_log.edges():
+    x0, y0 = pos_log[edge[0]]
+    x1, y1 = pos_log[edge[1]]
+    edge_x_log.append(x0)
+    edge_y_log.append(y0)
+    edge_x_log.append(x1)
+    edge_y_log.append(y1)
+    edge_x_log.append(None)
+    edge_y_log.append(None)
+
+edge_trace_log = go.Scatter(
+    x=edge_x_log, y=edge_y_log,
+    line=dict(width=0.5, color='#888'),
+    hoverinfo='none',
+    mode='lines')
+
+node_x_log = []
+node_y_log = []
+for node in G_log.nodes():
+    x, y = pos_log[node]
+    node_x_log.append(x)
+    node_y_log.append(y)
+
+node_trace_log = go.Scatter(
+    x=node_x_log, y=node_y_log,
+    mode='markers',
+    hoverinfo='text',
+    marker=dict(
+        showscale=True,
+        colorscale='YlGnBu',
+        reversescale=True,
+        color=[],
+        size=10,
+        colorbar=dict(
+            thickness=15,
+            title='Node Connections',
+            xanchor='left',
+            titleside='right'
+        ),
+        line_width=2))
+
+node_adjacencies_log = []
+node_text_log = []
+for node, adjacencies in enumerate(G_log.adjacency()):
+    node_adjacencies_log.append(len(adjacencies[1]))
+    node_text_log.append(f"Currency {node}")
+
+node_trace_log.marker.color = node_adjacencies_log
+node_trace_log.text = node_text_log
+
+fig_log = go.Figure(data=[edge_trace_log, node_trace_log],
+                layout=go.Layout(
+                    title='Log-Transformed Directed Graph Representation',
+                    titlefont_size=16,
+                    showlegend=False,
+                    hovermode='closest',
+                    margin=dict(b=20, l=5, r=5, t=40),
+                    annotations=[dict(
+                        text="A directed graph represents currencies as nodes and exchange rates as edges.",
+                        showarrow=False,
+                        xref="paper", yref="paper",
+                        x=0.005, y=-0.002)],
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                )
+
+st.plotly_chart(fig_log, use_container_width=True)
+```
+
+*   **Explanation:** This is very similar to the previous graph visualization, but it uses the log-transformed exchange rates as edge weights.  This transformation is crucial for the next step, where we'll use the Bellman-Ford algorithm to identify negative cycles, which indicate arbitrage opportunities.
 
 ## Identifying Arbitrage Cycles
+Duration: 00:05
+
+This section focuses on using the Bellman-Ford algorithm to identify arbitrage cycles within the log-transformed graph. An arbitrage cycle exists when a sequence of currency exchanges results in a profit, which translates to a negative cycle in the log-transformed graph.
+
+## Bellman-Ford Algorithm
 Duration: 00:20
 
-This section focuses on identifying arbitrage opportunities, which in graph terms, are represented as negative cycles in the log-transformed exchange rate graph. We use the Bellman-Ford algorithm to detect these cycles.
+The Bellman-Ford algorithm is used to detect negative cycles in a graph.  In our context, a negative cycle signifies an arbitrage opportunity.
 
 ```python
 import streamlit as st
@@ -167,212 +254,145 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 
+st.subheader("Finding an Arbitrage Cycle with Bellman-Ford")
+st.write("The Bellman-Ford algorithm detects negative cycles, indicating arbitrage opportunities in the log-transformed graph.")
+
+# Example exchange rate matrix (same as in representations.py)
+exchange_rate_matrix = pd.DataFrame({
+    0: [1.00, 0.58, 0.63, 0.27, 0.17, 0.20],
+    1: [1.68, 1.00, 0.39, 0.74, 0.47, 0.79],
+    2: [1.57, 2.48, 1.00, 0.04, 0.15, 0.11],
+    3: [3.64, 1.35, 22.94, 1.00, 0.22, 0.23],
+    4: [5.84, 2.02, 6.84, 4.40, 1.00, 0.49],
+    5: [4.76, 1.21, 8.59, 4.41, 1.97, 1.00]
+})
+
+# Log-transformed exchange rate matrix
+log_exchange_rate_matrix = -np.log(exchange_rate_matrix)
+log_exchange_rate_matrix = pd.DataFrame(log_exchange_rate_matrix)
+
+# Create a directed graph from the log-transformed matrix
+G_log = nx.DiGraph()
+for i in range(len(log_exchange_rate_matrix)):
+    for j in range(len(log_exchange_rate_matrix)):
+        G_log.add_edge(i, j, weight=log_exchange_rate_matrix.iloc[i, j])
+
+
+# Bellman-Ford Algorithm (Simplified for demonstration)
 def bf_negative_cycle(graph):
-    nodes = list(graph.nodes())
-    dist = {node: float('inf') for node in nodes}
-    pred = {node: None for node in nodes}
-    start_node = nodes[0]
+    dist = {node: float('inf') for node in graph.nodes()}
+    pred = {node: None for node in graph.nodes()}
+    start_node = 0
     dist[start_node] = 0
-    for _ in range(len(nodes)-1):
-        for u, v, data in graph.edges(data=True):
-            if dist[u] + data['weight'] < dist[v]:
-                dist[v] = dist[u] + data['weight']
+
+    for _ in range(len(graph.nodes()) - 1):
+        for u, v, weight in graph.edges(data='weight'):
+            if dist[u] != float('inf') and dist[u] + weight < dist[v]:
+                dist[v] = dist[u] + weight
                 pred[v] = u
-    # Check for negative cycles
-    for u, v, data in graph.edges(data=True):
-        if dist[u] + data['weight'] < dist[v]:
-            cycle = []
-            cur = v
-            visited = set()
-            while cur not in visited:
-                visited.add(cur)
-                cur = pred[cur]
-                if cur is None:
-                    break
-            if cur is None:
-                continue
-            cycle_start = cur
-            cycle = [cycle_start]
-            cur = pred[cycle_start]
-            while cur != cycle_start:
-                cycle.append(cur)
-                cur = pred[cur]
-            cycle.append(cycle_start)
-            return cycle[::-1]
-    return None
 
-def app():
-    st.subheader("Identifying Arbitrage Cycles")
-    st.write("The Bellman-Ford algorithm is used below on the log-transformed exchange rate graph to detect negative cycles (potential arbitrage opportunities).")
+        for u, v, weight in graph.edges(data='weight'):
+            if dist[u] != float('inf') and dist[u] + weight < dist[v]:
+                # Negative cycle detected. Construct the cycle.
+                cycle = []
+                curr = v
+                visited = {node: False for node in graph.nodes()}
+                while not visited[curr]:
+                    visited[curr] = True
+                    cycle.append(curr)
+                    curr = pred[curr]
+                    if curr is None:
+                        return None # No cycle
+                cycle.append(curr)
+                return cycle[::-1]  # Reverse the cycle to the correct order
+        return None
 
-    # Recreate the log-transformed exchange rate matrix from static data
-    exchange_rate_matrix = pd.DataFrame({
-        0: [1.00, 0.58, 0.63, 0.27, 0.17, 0.20],
-        1: [1.68, 1.00, 0.39, 0.74, 0.47, 0.79],
-        2: [1.57, 2.48, 1.00, 0.04, 0.15, 0.11],
-        3: [3.64, 1.35, 22.94, 1.00, 0.22, 0.23],
-        4: [5.84, 2.02, 6.84, 4.40, 1.00, 0.49],
-        5: [4.76, 1.21, 8.59, 4.41, 1.97, 1.00]
-    })
-    log_exchange_rate_matrix = -np.log(exchange_rate_matrix)
-    n = len(log_exchange_rate_matrix)
-    G_log = nx.DiGraph()
-    for i in range(n):
-        for j in range(n):
-            G_log.add_edge(i, j, weight=log_exchange_rate_matrix.iloc[i, j])
 
     arbitrage_cycle = bf_negative_cycle(G_log)
+
     if arbitrage_cycle:
         st.write("Arbitrage Cycle Found:", arbitrage_cycle)
-        cycle_weight = 0
-        for i in range(len(arbitrage_cycle)-1):
-            u = arbitrage_cycle[i]
-            v = arbitrage_cycle[i+1]
-            cycle_weight += G_log[u][v]['weight']
-        arbitrage_multiplier = np.exp(-cycle_weight)
-        st.write("Arbitrage Multiplier:", arbitrage_multiplier)
-    else:
-        st.write("No Arbitrage Cycle Found.")
-
-if __name__ == '__main__':
-    app()
-```
-
-### Bellman-Ford Algorithm for Negative Cycle Detection
-Duration: 00:10
-
-The `bf_negative_cycle` function in `pages/arbitrage.py` implements the Bellman-Ford algorithm. Here's a breakdown:
-
-```python
-def bf_negative_cycle(graph):
-    nodes = list(graph.nodes())
-    dist = {node: float('inf') for node in nodes} # Initialize distances to infinity
-    pred = {node: None for node in nodes} # Initialize predecessors to None
-    start_node = nodes[0]
-    dist[start_node] = 0 # Set distance from start node to itself as 0
-
-    # Relax edges repeatedly
-    for _ in range(len(nodes)-1):
-        for u, v, data in graph.edges(data=True):
-            if dist[u] + data['weight'] < dist[v]: # Relaxation condition
-                dist[v] = dist[u] + data['weight'] # Update distance
-                pred[v] = u # Update predecessor
-
-    # Check for negative cycles in the last iteration
-    for u, v, data in graph.edges(data=True):
-        if dist[u] + data['weight'] < dist[v]: # If distance can still be reduced, negative cycle exists
-            cycle = []
-            cur = v
-            visited = set()
-            # Backtrack to find the cycle
-            while cur not in visited:
-                visited.add(cur)
-                cur = pred[cur]
-                if cur is None:
-                    break
-            if cur is None:
-                continue
-            cycle_start = cur
-            cycle = [cycle_start]
-            cur = pred[cycle_start]
-            while cur != cycle_start:
-                cycle.append(cur)
-                cur = pred[cur]
-            cycle.append(cycle_start)
-            return cycle[::-1] # Return the negative cycle
-
-    return None # No negative cycle found
-```
-
-1. **Initialization:** Distances to all nodes are initialized to infinity, except for the starting node, which is set to 0. Predecessor pointers are initialized to `None`.
-2. **Relaxation:** The algorithm iterates `|V|-1` times (where `|V|` is the number of nodes). In each iteration, it relaxes all edges. Relaxing an edge (u, v) means checking if the path to v through u is shorter than the current distance to v. If it is, the distance to v and the predecessor of v are updated.
-3. **Negative Cycle Detection:** After `|V|-1` iterations, if we can still relax any edge, it indicates the presence of a negative cycle. The algorithm then backtracks using the predecessor pointers to reconstruct the cycle.
-
-### Arbitrage Cycle and Multiplier
-Duration: 00:05
-
-If a negative cycle is detected, QuLab identifies it as a potential arbitrage cycle. The application then calculates the "Arbitrage Multiplier".
-
-```python
-    arbitrage_cycle = bf_negative_cycle(G_log)
-    if arbitrage_cycle:
-        st.write("Arbitrage Cycle Found:", arbitrage_cycle)
-        cycle_weight = 0
-        for i in range(len(arbitrage_cycle)-1):
-            u = arbitrage_cycle[i]
-            v = arbitrage_cycle[i+1]
-            cycle_weight += G_log[u][v]['weight'] # Sum of log-transformed weights in the cycle
-        arbitrage_multiplier = np.exp(-cycle_weight) # Convert back to multiplicative factor
+        cycle_weight = sum(G_log[arbitrage_cycle[i]][arbitrage_cycle[(i + 1) % len(arbitrage_cycle)]]['weight']
+                           for i in range(len(arbitrage_cycle)])
+        arbitrage_multiplier = np.exp(-cycle_weight) #undo log transform and negative
         st.write("Arbitrage Multiplier:", arbitrage_multiplier)
     else:
         st.write("No Arbitrage Cycle Found.")
 ```
 
-The `arbitrage_multiplier` is calculated by exponentiating the negative of the sum of the log-transformed edge weights in the cycle. If this multiplier is greater than 1, it indicates a profitable arbitrage opportunity. For example, an arbitrage multiplier of 1.05 means that for every 1 unit of currency you start with, you can end up with 1.05 units after completing the cycle, resulting in a 5% profit (before considering transaction costs).
+*   **Explanation:**
+    *   The `bf_negative_cycle` function implements the Bellman-Ford algorithm.
+    *   It initializes distances to infinity for all nodes except the starting node (node 0).
+    *   It iterates through the edges of the graph `|V| - 1` times, where `|V|` is the number of nodes, relaxing the edges (updating distances) if a shorter path is found.
+    *   After the iterations, it checks for negative cycles by iterating through the edges again. If a shorter path is still found, it indicates a negative cycle.
+    *   If a negative cycle is detected, the function reconstructs the cycle by backtracking from the node where the shorter path was found.
+    *   The `arbitrage_multiplier` is calculated by exponentiating the negative of the cycle weight. This represents the profit you would make by trading along the cycle.
 
 <aside class="negative">
-  <b>Important Note:</b> The presence of a negative cycle only indicates a *potential* arbitrage opportunity. Real-world factors like transaction costs and execution speed are not considered here.
+<b>Important:</b> This implementation is a simplified version for demonstration purposes. Real-world implementations often require optimizations and more robust error handling.
 </aside>
+
+## Optimal Set of Cycles (Theoretical)
+Duration: 00:05
+
+The application mentions finding the "optimal" set of cycles. In reality, finding the *absolute best* set of arbitrage trades is an NP-hard problem. The application alludes to using linear programming relaxation via CVXPY, but the actual implementation is omitted.
+
+```python
+st.subheader("Finding an 'Optimal' Set of Cycles")
+st.write("Finding the absolute best set of arbitrage trades is computationally hard (NP-hard). This section would demonstrate a simplified problem using linear programming relaxation via CVXPY.")
+st.write("CVXPY Implementation is omitted due to not being required in the simplified specification.")
+```
+
+*   **Explanation:** This section acknowledges the complexity of finding the globally optimal arbitrage strategy and indicates that more advanced techniques like linear programming with CVXPY could be used, but are not implemented in this simplified demo.
 
 ## Live Arbitrage Identification
 Duration: 00:05
 
-The "Live Arbitrage Identification" page in QuLab is a conceptual demonstration of how real-time arbitrage detection could be implemented.
+This section would ideally demonstrate live arbitrage identification using real-time data from cryptocurrency exchanges or other financial markets.  However, due to the complexity of integrating with live data feeds and the limitations of the Streamlit environment, a live implementation is not included.
 
 ```python
 import streamlit as st
 
-def app():
+def run_live_arbitrage():
     st.subheader("Live Arbitrage Identification")
-    st.write("In a production environment, live data from cryptocurrency exchanges would be fetched using libraries such as CCXT to identify arbitrage opportunities in real-time.")
-    st.markdown("**Note:** This is a simulated demonstration. Live data functionality is not implemented in this demo.")
-
-if __name__ == '__main__':
-    app()
+    st.write("This section would demonstrate live arbitrage identification using real-time data from cryptocurrency exchanges.")
+    st.write("The CCXT library could be used to fetch the live data. However, due to the complexity and limitations of this environment, a live implementation is not included in this demonstration.")
+    st.write("Instead, this section serves as a placeholder to indicate where live arbitrage identification would be implemented in a real-world application.")
 ```
 
-As explained in `pages/live_arbitrage.py`, in a live trading environment, you would use libraries like CCXT (CryptoCurrency eXchange Trading Library) to fetch real-time exchange rate data from various cryptocurrency exchanges. This data would then be used to construct the exchange rate matrix and the log-transformed graph dynamically. The Bellman-Ford algorithm would be run periodically to detect arbitrage opportunities in real-time.
+*   **Explanation:** The code indicates where a real-time data integration would be placed. The `CCXT` library is a popular choice for accessing cryptocurrency exchange data.
 
-<aside class="positive">
-  <b>Further Exploration:</b>  Investigate CCXT and other similar libraries to understand how to fetch live market data for building a real-time arbitrage detection system.
+<aside class="negative">
+<b>Important:</b> Implementing live arbitrage trading requires careful consideration of exchange APIs, rate limits, transaction costs, and robust error handling.
 </aside>
 
 ## Practical Challenges of Arbitrage Trading
 Duration: 00:10
 
-Arbitrage trading, while theoretically profitable, faces numerous practical challenges. The "Practical Challenges of Arbitrage Trading" page in QuLab highlights these issues.
+This section outlines the practical challenges that arbitrage traders face in real-world scenarios.
 
 ```python
 import streamlit as st
 
-def app():
+def run_challenges():
     st.subheader("Practical Challenges of Arbitrage Trading")
-    st.write("Arbitrage trading, while promising in theory, faces several practical challenges in the real world:")
+    st.write("Arbitrage trading, while potentially profitable, faces several practical challenges:")
     st.markdown("""
-    - **Speed and Timing Issues:** Rapid market movements require lightning-fast execution.
-    - **Transaction Costs:** Fees and spreads can significantly reduce or eliminate profits.
-    - **Liquidity Constraints:** Not all markets have the depth required for large arbitrage trades.
-    - **Error Handling:** Data discrepancies and connectivity issues can adversely impact trading.
-    - **Regulatory Concerns:** Diverse legal frameworks can limit or complicate arbitrage strategies.
+    *   **Speed:** Arbitrage opportunities can disappear quickly, requiring fast execution.
+    *   **Timing Issues:** Precise timing is crucial for executing trades at the optimal moment.
+    *   **Costs of Inventory:** Holding currencies or crypto assets incurs costs.
+    *   **Available Liquidity:** Sufficient liquidity is needed to execute large trades without significantly impacting prices.
+    *   **Precision:** Accurate exchange rate data and precise order execution are essential.
+    *   **Error Handling:** Robust error handling is needed to manage unexpected issues during trading.
     """)
-
-if __name__ == '__main__':
-    app()
 ```
 
-As listed in `pages/challenges.py`, some of the key challenges include:
+*   **Explanation:** This section highlights the key challenges, including speed, timing, inventory costs, liquidity, precision, and error handling.  These factors can significantly impact the profitability of arbitrage strategies.
 
-- **Speed and Timing Issues:** Arbitrage opportunities are often short-lived. High-speed infrastructure and algorithms are required to execute trades quickly.
-- **Transaction Costs:** Exchange fees and spreads can eat into the small profit margins of arbitrage trades, potentially making them unprofitable.
-- **Liquidity Constraints:** Sufficient liquidity is needed to execute large trades without significantly moving the market prices, which can eliminate the arbitrage opportunity.
-- **Error Handling:** Robust error handling is crucial to deal with data inaccuracies, connectivity problems, and execution failures, which can lead to losses.
-- **Regulatory Concerns:** Different jurisdictions have varying regulations on arbitrage trading, which can complicate operations and limit strategy deployment.
-
-<aside class="negative">
-  <b>Real-world Consideration:</b> Always consider these practical challenges when evaluating the feasibility of arbitrage strategies. Theoretical profitability does not always translate to real-world profits.
+<aside class="positive">
+<b>Key Takeaway:</b> While arbitrage opportunities may exist, successfully exploiting them in practice requires careful planning, robust infrastructure, and a deep understanding of the market.
 </aside>
 
 ## Conclusion
-Duration: 00:05
 
-This codelab provided a comprehensive overview of the QuLab application, covering market representations, arbitrage cycle identification using the Bellman-Ford algorithm, and the practical challenges of arbitrage trading. You should now have a clear understanding of how QuLab demonstrates arbitrage principles and the complexities involved in real-world arbitrage strategies. Remember that QuLab is primarily for educational purposes, and actual arbitrage trading involves significant risks and requires sophisticated infrastructure and risk management strategies.
+This codelab provided a comprehensive overview of the QuLab application and its functionalities. You learned how to represent market data, identify arbitrage cycles using the Bellman-Ford algorithm, and understand the practical challenges of arbitrage trading. Remember that this application is an educational tool, and real-world arbitrage trading involves significant complexities and risks.
