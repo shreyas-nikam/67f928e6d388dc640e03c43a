@@ -2,4 +2,7 @@ streamlit
 pandas
 numpy
 networkx
+plotly
 matplotlib
+cvxpy
+ccxt
