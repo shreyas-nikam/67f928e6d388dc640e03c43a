@@ -1,7 +1,0 @@
-streamlit
-pandas
-numpy
-networkx
-plotly
-cvxpy
-ccxt
