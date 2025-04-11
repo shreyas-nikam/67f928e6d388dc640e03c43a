@@ -1,28 +1,33 @@
-
 # Crypto Trading and Arbitrage Identification Strategies
 
-This Streamlit application provides an interactive exploration of arbitrage opportunities in cryptocurrency markets.
+This repository contains a multi-page Streamlit application that demonstrates various aspects of crypto trading and arbitrage identification.
 
-## Sections
+## Overview
 
-*   **Representations of a Market:** Visualizes exchange rate matrices and directed graphs.
-*   **Identifying Arbitrage Cycles:** Demonstrates the Bellman-Ford algorithm for detecting arbitrage cycles.
-*   **Live Arbitrage Identification:** (Placeholder) Indicates where live data integration would occur.
-*   **Practical Challenges of Arbitrage Trading:** Lists the challenges involved in arbitrage trading.
+The application includes the following sections:
+- **Market Representations:** Visualize synthetic exchange rate matrices, directed graph representations, and log-transformed data.
+- **Identifying Arbitrage Cycles:** Use a simplified Bellman-Ford algorithm to detect arbitrage opportunities.
+- **Live Arbitrage Identification:** A placeholder for live streaming data integration (e.g., via CCXT).
+- **Practical Challenges of Arbitrage Trading:** Explanation of real-world challenges in executing arbitrage strategies.
 
-## How to Run
+## Running the Application
 
-1.  Make sure you have docker installed.
-2.  Clone this repository.
-3.  Build the Docker image: `docker build -t crypto-arbitrage .`
-4.  Run the Docker container: `docker run -p 8501:8501 crypto-arbitrage`
-5.  Open your browser and go to `http://localhost:8501`.
+1. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+2. Run the application:
+   ```
+   streamlit run app.py
+   ```
 
-## Dependencies
+## Docker
 
-*   Streamlit
-*   Pandas
-*   NumPy
-*   NetworkX
-*   Plotly
+A Dockerfile is provided to containerize the application.
+Build the Docker image with:
 
+Run the container with:
+
+## Note
+
+This demonstration is for educational purposes only.
