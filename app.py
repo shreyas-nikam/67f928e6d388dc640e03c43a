@@ -11,7 +11,6 @@ st.divider()
 page = st.sidebar.selectbox(label="Navigation", options=[
     "Representations of a Market",
     "Identifying Arbitrage Cycles",
-    "Live Arbitrage Identification",
     "Practical Challenges of Arbitrage Trading"
 ])
 
@@ -21,9 +20,6 @@ if page == "Representations of a Market":
 elif page == "Identifying Arbitrage Cycles":
     from application_pages.arbitrage_cycles import run_arbitrage_cycles
     run_arbitrage_cycles()
-elif page == "Live Arbitrage Identification":
-    from application_pages.live_arbitrage import run_live_arbitrage
-    run_live_arbitrage()
 elif page == "Practical Challenges of Arbitrage Trading":
     from application_pages.challenges import run_challenges
     run_challenges()

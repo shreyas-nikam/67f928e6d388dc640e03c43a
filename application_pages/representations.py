@@ -72,7 +72,6 @@ def run_representations():
                 thickness=15,
                 title='Node Connections',
                 xanchor='left',
-                titleside='right'
             ),
             line_width=2))
 
@@ -88,7 +87,6 @@ def run_representations():
     fig = go.Figure(data=[edge_trace, node_trace],
                     layout=go.Layout(
                         title='Directed Graph Representation',
-                        titlefont_size=16,
                         showlegend=False,
                         hovermode='closest',
                         margin=dict(b=20, l=5, r=5, t=40),
@@ -160,7 +158,6 @@ def run_representations():
                 thickness=15,
                 title='Node Connections',
                 xanchor='left',
-                titleside='right'
             ),
             line_width=2))
 
@@ -176,7 +173,6 @@ def run_representations():
     fig_log = go.Figure(data=[edge_trace_log, node_trace_log],
                     layout=go.Layout(
                         title='Log-Transformed Directed Graph Representation',
-                        titlefont_size=16,
                         showlegend=False,
                         hovermode='closest',
                         margin=dict(b=20, l=5, r=5, t=40),
