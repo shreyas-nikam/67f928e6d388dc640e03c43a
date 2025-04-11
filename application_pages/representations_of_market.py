@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # Example exchange rate matrix
 exchange_rate_matrix = pd.DataFrame({
@@ -27,14 +27,75 @@ def app():
 
     # Visualization
     pos = nx.spring_layout(G)  # You can experiment with different layouts
-    plt.figure(figsize=(8, 6))
-    nx.draw(G, pos, with_labels=True, node_color='pink', node_size=800, font_size=10, alpha=0.8)
     edge_labels = {(i, j): round(G[i][j]['weight'], 2) for i, j in G.edges()}
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
+
+    # Create Plotly graph
+    edge_x = []
+    edge_y = []
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.append(x0)
+        edge_x.append(x1)
+        edge_x.append(None)
+        edge_y.append(y0)
+        edge_y.append(y1)
+        edge_y.append(None)
+
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        line=dict(width=0.5, color='#888'),
+        hoverinfo='none',
+        mode='lines')
+
+    node_x = []
+    node_y = []
+    for node in G.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+
+    node_trace = go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers',
+        hoverinfo='text',
+        marker=dict(
+            showscale=False,
+            colorscale='YlGnBu',
+            reversescale=True,
+            color=[],
+            size=10,
+            line_width=2))
+
+    node_adjacencies = []
+    node_text = []
+    for node, adjacencies in enumerate(G.adjacency()):
+        node_adjacencies.append(len(adjacencies[1]))
+        node_text.append(f"Currency: {node}")
+
+    node_trace.marker.color = node_adjacencies
+    node_trace.text = node_text
+
+    fig = go.Figure(data=[edge_trace, node_trace],
+                    layout=go.Layout(
+                        title='<br>Directed Graph Representation',
+                        titlefont_size=16,
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=20, l=5, r=5, t=40),
+                        annotations=[dict(
+                            text="A directed graph represents currencies as nodes and exchange rates as edges.",
+                            showarrow=False,
+                            xref="paper", yref="paper",
+                            x=0.005, y=-0.002)],
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                    )
+
     st.subheader("Directed Graph Representation")
     st.write("A directed graph represents currencies as nodes and exchange rates as edges.")
-    st.pyplot(plt)  # Display the graph in Streamlit
-    plt.clf() #clear the plot to prevent issues when displaying multiple plots
+    st.plotly_chart(fig, use_container_width=True)
+
 
     # Log-transformed exchange rate matrix
     log_exchange_rate_matrix = -np.log(exchange_rate_matrix)
@@ -51,9 +112,71 @@ def app():
 
     # Visualization
     pos_log = nx.spring_layout(G_log)  # You can experiment with different layouts
-    plt.figure(figsize=(8, 6))
-    nx.draw(G_log, pos_log, with_labels=True, node_color='pink', node_size=800, font_size=10, alpha=0.8)
     edge_labels_log = {(i, j): round(G_log[i][j]['weight'], 2) for i, j in G_log.edges()}
-    nx.draw_networkx_edge_labels(G_log, pos_log, edge_labels=edge_labels_log, font_size=8)
-    st.pyplot(plt)
-    plt.clf()
+
+    # Create Plotly graph
+    edge_x_log = []
+    edge_y_log = []
+    for edge in G_log.edges():
+        x0, y0 = pos_log[edge[0]]
+        x1, y1 = pos_log[edge[1]]
+        edge_x_log.append(x0)
+        edge_x_log.append(x1)
+        edge_x_log.append(None)
+        edge_y_log.append(y0)
+        edge_y_log.append(y1)
+        edge_y_log.append(None)
+
+    edge_trace_log = go.Scatter(
+        x=edge_x_log, y=edge_y_log,
+        line=dict(width=0.5, color='#888'),
+        hoverinfo='none',
+        mode='lines')
+
+    node_x_log = []
+    node_y_log = []
+    for node in G_log.nodes():
+        x, y = pos_log[node]
+        node_x_log.append(x)
+        node_y_log.append(y)
+
+    node_trace_log = go.Scatter(
+        x=node_x_log, y=node_y_log,
+        mode='markers',
+        hoverinfo='text',
+        marker=dict(
+            showscale=False,
+            colorscale='YlGnBu',
+            reversescale=True,
+            color=[],
+            size=10,
+            line_width=2))
+
+    node_adjacencies_log = []
+    node_text_log = []
+    for node, adjacencies in enumerate(G_log.adjacency()):
+        node_adjacencies_log.append(len(adjacencies[1]))
+        node_text_log.append(f"Currency: {node}")
+
+    node_trace_log.marker.color = node_adjacencies_log
+    node_trace_log.text = node_text_log
+
+    fig_log = go.Figure(data=[edge_trace_log, node_trace_log],
+                    layout=go.Layout(
+                        title='<br>Directed Graph Representation (Log-Transformed)',
+                        titlefont_size=16,
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=20, l=5, r=5, t=40),
+                        annotations=[dict(
+                            text="Log-transformed graph represents currencies as nodes and log-transformed exchange rates as edges.",
+                            showarrow=False,
+                            xref="paper", yref="paper",
+                            x=0.005, y=-0.002)],
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                    )
+
+    st.subheader("Directed Graph Representation (Log-Transformed)")
+    st.write("Log-transformed graph represents currencies as nodes and log-transformed exchange rates as edges.")
+    st.plotly_chart(fig_log, use_container_width=True)
