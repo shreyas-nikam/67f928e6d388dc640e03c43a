@@ -1,34 +1,28 @@
+
 # Crypto Trading and Arbitrage Identification Strategies
 
-This repository contains a multi-page Streamlit application demonstrating interactive visualizations and examples of cryptocurrency trading and arbitrage identification strategies.
+This Streamlit application provides an interactive exploration of arbitrage opportunities in cryptocurrency markets.
 
-## Overview
+## Sections
 
-The app includes:
-- **Representations of a Market:** Illustrations using a static exchange rate matrix, a directed graph representation, and log-transformed versions.
-- **Identifying Arbitrage Cycles:** Implementation of the Bellman-Ford algorithm to detect negative cycles, indicating potential arbitrage opportunities.
-- **Live Arbitrage Identification:** A conceptual page discussing live data identification using libraries like CCXT.
-- **Practical Challenges of Arbitrage Trading:** Discussion of real-world challenges in executing arbitrage strategies.
+*   **Representations of a Market:** Visualizes exchange rate matrices and directed graphs.
+*   **Identifying Arbitrage Cycles:** Demonstrates the Bellman-Ford algorithm for detecting arbitrage cycles.
+*   **Live Arbitrage Identification:** (Placeholder) Indicates where live data integration would occur.
+*   **Practical Challenges of Arbitrage Trading:** Lists the challenges involved in arbitrage trading.
 
-## Usage
+## How to Run
 
-1. Install dependencies using:
-   ```
-   pip install -r requirements.txt
-   ```
-2. Run the app with:
-   ```
-   streamlit run app.py
-   ```
+1.  Make sure you have docker installed.
+2.  Clone this repository.
+3.  Build the Docker image: `docker build -t crypto-arbitrage .`
+4.  Run the Docker container: `docker run -p 8501:8501 crypto-arbitrage`
+5.  Open your browser and go to `http://localhost:8501`.
 
-## Docker
+## Dependencies
 
-A Dockerfile is provided for containerized deployments. Build and run the container as follows:
-   ```
-   docker build -t qulab .
-   docker run -p 8501:8501 qulab
-   ```
+*   Streamlit
+*   Pandas
+*   NumPy
+*   NetworkX
+*   Plotly
 
-## License
-
-© 2025 QuantUniversity. All Rights Reserved.
